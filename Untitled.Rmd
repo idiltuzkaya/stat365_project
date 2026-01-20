@@ -1,0 +1,239 @@
+---
+title: "Untitled"
+output: html_document
+date: "2026-01-18"
+---
+
+
+
+1. Chi-Square Test of Independence
+
+Use this for: Categorical vs. Categorical relationships.
+
+Application: Test if Gender or Faculty influences Post-Graduation Plans.
+
+Hypothesis Example: H 
+0
+​	
+ : There is no association between a student's faculty and their primary plan after graduation.
+
+Visual Support: This supports any grouped bar charts showing plan distribution by faculty.
+
+2. Kruskal-Wallis Test
+
+Use this for: Ordinal Rankings (like your Question 29).
+
+Application: Test if different Age Groups or Years of Study have significantly different rankings for Work-Life Balance or Salary.
+
+Why this test? Since your rankings are ordinal (1–5) and not normally distributed, this non-parametric alternative to ANOVA is the statistically sound choice for STAT365.
+
+3. One-Way ANOVA (or Kruskal-Wallis for Salary)
+
+Use this for: Categorical vs. Numerical (Salary Expectations).
+
+Application: Test if the Mean Expected Salary differs significantly across Faculties.
+
+Claim Support: This statistically validates your visualization showing if Engineering students have higher salary expectations than other faculties.
+
+4. Correlation Analysis (Spearman's Rho)
+
+Use this for: Numerical vs. Numerical (or Ordinal).
+
+Application: Examine the relationship between Cumulative GPA and Salary Expectation.
+
+Claim Support: It answers whether students with higher academic performance also hold higher financial expectations.
+```{r}
+
+# Convert salary to an ordered factor for testing
+clean_data$salary_factor <- factor(clean_data$salary_clean, 
+                                   levels = c("< 30,000", "30,000–49,999", "50,000–69,999", 
+                                              "70,000–99,999", "100,000+"), 
+                                   ordered = TRUE)
+
+# Run Kruskal-Wallis Test
+k_test <- kruskal.test(as.numeric(salary_factor) ~ faculty_merged, data = clean_data)
+print(k_test)
+
+# If significant (p < 0.05), run a post-hoc test to see WHICH faculties differ
+if(k_test$p.value < 0.05){
+  library(FSA)
+  dunnTest(as.numeric(salary_factor) ~ faculty_merged, data = clean_data, method="bh")
+}
+```
+
+
+
+
+```{r}
+# Convert GPA ranges to numeric ranks (1-5)
+clean_data$gpa_rank <- as.numeric(factor(clean_data$`6- Please indicate your current cumulative GPA (on a 4.00 scale).`, 
+                   levels = c("0–2.0", "2.01–2.5", "2.51–3.0", "3.01–3.5", "3.51–4.0", "Not Applicable")))
+
+# Run Spearman Correlation (Rank-based)
+cor_test <- cor.test(clean_data$gpa_rank, as.numeric(clean_data$salary_factor), 
+                     method = "spearman", exact = FALSE)
+print(cor_test)
+```
+
+
+faculty- career priotries +
+
+```{r}
+# Convert the priority ranking to an ordered factor for one variable, e.g., Work-Life Balance
+clean_data$WLB_Rank <- factor(clean_data$`29-  Please order the following from 1 (most important) to 5 (least important) according to your priorities. Each number can be used only once. [Work–life balance]`, 
+                              levels = c("1", "2", "3", "4", "5"), 
+                              ordered = TRUE)
+
+# Run the Kruskal-Wallis Test across Faculty groups
+k_test_faculty <- kruskal.test(as.numeric(WLB_Rank) ~ faculty_merged, data = clean_data)
+print(k_test_faculty)
+
+
+
+
+# Interpretation: 
+# If p-value < 0.05, faculty significantly influences the priority given to Work-Life Balance.
+
+clean_data$salary_benefit <- factor(clean_data$`29-  Please order the following from 1 (most important) to 5 (least important) according to your priorities. Each number can be used only once. [ High salary & benefits]`, 
+                              levels = c("1", "2", "3", "4", "5"), 
+                              ordered = TRUE)
+
+# Run the Kruskal-Wallis Test across Faculty groups
+k_test_faculty <- kruskal.test(as.numeric(salary_benefit) ~ faculty_merged, data = clean_data)
+print(k_test_faculty)
+
+
+
+
+
+clean_data$meaningful_work <- factor(clean_data$`29-  Please order the following from 1 (most important) to 5 (least important) according to your priorities. Each number can be used only once. [ Meaningful work (positive social impact)]`, 
+                              levels = c("1", "2", "3", "4", "5"), 
+                              ordered = TRUE)
+
+# Run the Kruskal-Wallis Test across Faculty groups
+k_test_faculty <- kruskal.test(as.numeric(meaningful_work) ~ faculty_merged, data = clean_data)
+print(k_test_faculty)
+
+
+
+
+
+clean_data$stability <- factor(clean_data$`29-  Please order the following from 1 (most important) to 5 (least important) according to your priorities. Each number can be used only once. [ Career stability]`, 
+                              levels = c("1", "2", "3", "4", "5"), 
+                              ordered = TRUE)
+
+# Run the Kruskal-Wallis Test across Faculty groups
+k_test_faculty <- kruskal.test(as.numeric(stability) ~ faculty_merged, data = clean_data)
+print(k_test_faculty)
+
+
+
+
+
+
+
+
+
+clean_data$indep <- factor(clean_data$`29-  Please order the following from 1 (most important) to 5 (least important) according to your priorities. Each number can be used only once. [ Autonomy & independence]`, 
+                              levels = c("1", "2", "3", "4", "5"), 
+                              ordered = TRUE)
+
+# Run the Kruskal-Wallis Test across Faculty groups
+k_test_faculty <- kruskal.test(as.numeric(indep) ~ faculty_merged, data = clean_data)
+print(k_test_faculty)
+```
+
+
+
+
+
+
+```{r}
+# 1. Prepare the Salary variable as numeric ranks
+clean_data$salary_numeric <- as.numeric(factor(clean_data$salary_clean, 
+                                        levels = c("< 30,000", "30,000–49,999", "50,000–69,999", 
+                                                   "70,000–99,999", "100,000+","Prefer not to say"), 
+                                        ordered = TRUE))
+
+# 2. Run One-Way ANOVA for Faculty
+anova_faculty <- aov(salary_numeric ~ faculty_merged, data = clean_data)
+summary(anova_faculty)
+
+# 3. Run One-Way ANOVA for Post-Graduation Plan
+anova_plan <- aov(salary_numeric ~ `13- After completing your degree, what is your primary plan?`, 
+                  data = clean_data)
+summary(anova_plan)
+```
+
+
+
+```{r}
+# 1. Prepare numeric Salary Rank (1 to 5)
+clean_data$salary_num <- as.numeric(factor(clean_data$salary_clean, 
+                                    levels = c("< 30,000", "30,000–49,999", "50,000–69,999", 
+                                               "70,000–99,999", "100,000+")))
+
+# 2. Prepare numeric GPA Rank (1 to 5)
+clean_data$gpa_num <- as.numeric(factor(clean_data$`6- Please indicate your current cumulative GPA (on a 4.00 scale).`,
+                                 levels = c("0–2.0", "2.01–2.5", "2.51–3.0", "3.01–3.5", "3.51–4.0")))
+
+# 3. Ensure Gender and Faculty are factors
+clean_data$gender_f <- as.factor(clean_data$`5- Which of the following best describes your gender identity?`)
+clean_data$faculty_f <- as.factor(clean_data$faculty_merged)
+
+# 4. Run the Multiple Linear Regression
+model <- lm(salary_num ~ gpa_num + gender_f + faculty_f, data = clean_data)
+
+# 5. Check results
+summary(model)
+
+
+
+# Visual check (The 4 standard plots)
+par(mfrow = c(2, 2))
+plot(model)
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+library(car)
+# Levene's Test for Homogeneity of Variance
+leveneTest(salary_numeric ~ faculty_merged, data = clean_data)
+```
+
+
+
+
+```{r}
+# Load libraries
+library(broom)
+library(dplyr)
+
+# Function to test each question against "Neutral" (3)
+test_results <- likert_numeric %>%
+  pivot_longer(cols = everything(), names_to = "Question", values_to = "Score") %>%
+  group_by(Question) %>%
+  summarise(
+    Mean = mean(Score, na.rm = TRUE),
+    SD = sd(Score, na.rm = TRUE),
+    # Run the T-Test: Is the mean different from 3?
+    p_value = t.test(Score, mu = 3)$p.value,
+    # Confidence Interval to show the range
+    Conf_Low = t.test(Score, mu = 3)$conf.int[1],
+    Conf_High = t.test(Score, mu = 3)$conf.int[2]
+  ) %>%
+  mutate(Significance = ifelse(p_value < 0.05, "Significant", "Not Significant"))
+
+print(test_results)
+```
+
+

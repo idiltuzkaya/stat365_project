@@ -1,0 +1,649 @@
+---
+title: "final_stat365_viz"
+output: html_document
+date: "2025-12-29"
+---
+
+
+
+```{r}
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(scales)
+library(fmsb)
+library(broom)
+
+# Set working directory (DO NOT repeat later)
+setwd("~/Desktop/STAT365_project")
+
+# Create figures folder
+dir.create("figures", showWarnings = FALSE)
+
+# Global theme
+theme_editorial <- theme_bw(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", size = 15),
+    panel.grid.major.y = element_line(color = "grey85"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    legend.position = "bottom",
+    legend.title = element_blank()
+  )
+
+theme_set(theme_editorial)
+
+career_palette <- c(
+  "#4C72B0",  # blue
+  "#55A868",  # green
+  "#C44E52",  # red
+  "#8172B3",  # purple
+  "#999999"   # gray
+)
+
+
+
+
+
+
+
+```
+
+
+
+```{r}
+clean_data <- read_csv("~/Desktop/clean_data.csv")
+```
+
+
+RQ0
+
+```{r}
+
+
+
+p1 <- ggplot(clean_data, aes(x = faculty_merged)) +
+  geom_bar(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Faculty Distribution", x = NULL, y = "Count")
+
+ggsave("figures/rq0_faculty_distribution.svg", p1, width = 7, height = 4)
+
+
+
+p2 <- ggplot(clean_data, aes(x = `3- What is your current year of study?`)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Year of Study", x = NULL, y = "Count")
+
+
+ggsave("figures/rq0_year.svg", p2, width = 7, height = 4)
+
+
+
+p3 <- ggplot(clean_data, aes(x = `5- Which of the following best describes your gender identity?`)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Gender Identity", x = NULL, y = "Count")
+
+
+ggsave("figures/rq0_gender.svg", p3, width = 7, height = 4)
+
+
+
+
+
+
+p4 <- ggplot(clean_data, aes(x = `7- Are you currently employed, interning, or working freelance?`)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Employment Status", x = NULL, y = "Count")
+
+ggsave("figures/rq0_employment.svg", p4, width = 7, height = 4)
+
+
+# GPA distribution (interval-based)
+p5<- ggplot(clean_data, aes(x = `6- Please indicate your current cumulative GPA (on a 4.00 scale).`)) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "GPA Distribution", x = "GPA Range", y = "Count")
+
+
+ggsave("figures/rq0_gpa_distribution.svg", p5, width = 7, height = 4)
+
+
+
+p01 <-ggplot(clean_data, aes(x = `13- After completing your degree, what is your primary plan?`)) +
+  geom_bar(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Distribution of Post-Graduation Plans", x = "Plan", y = "Count")
+
+ggsave("figures/rq0_post_grad_plans.svg", p01, width = 7, height = 4)
+
+
+
+
+p02<-ggplot(clean_data, aes(x = `4- Please indicate your age group.`)) + 
+  geom_bar(fill= "steelblue")+
+  labs(title = "Distribution of Ages")
+ggsave("figures/rq0_dist_ages.svg", p02, width = 7, height = 4)
+
+library(patchwork)
+
+par(mfrow= c(2,2))
+
+rq0_grid <- (p1 | p3) /
+            (p4 | p02)
+
+ggsave(
+  "figures/rq0_demographic_grid.svg",
+  rq0_grid,
+  width = 10,
+  height = 8
+)
+
+```
+
+
+RQ1
+
+```{r}
+library(ggplot2)
+
+p6<- ggplot(clean_data, aes(x = `13- After completing your degree, what is your primary plan?`)) +
+  geom_bar(fill= "steelblue") +
+  coord_flip() +
+  labs(title = "Post-Graduation Plans", x = NULL, y = "Count")+
+  scale_fill_manual(values = career_palette)
+
+ggsave("figures/rq1_post_grad_plan.svg", p6, width = 7, height = 4)
+
+# Faculty × plan
+
+p7 <- ggplot(clean_data, aes(x = faculty_merged, 
+                             fill = `13- After completing your degree, what is your primary plan?`)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Post-Graduation Plans by Faculty", 
+    y = "Proportion", 
+    x = NULL,
+    fill = NULL     # Removes the legend title
+  ) +
+  scale_fill_manual(
+    values = career_palette,
+    # Optional: Wraps text if the labels are too wide for the side
+    labels = function(x) stringr::str_wrap(x, width = 20)
+  ) +
+  theme(
+    legend.position = "right",             # Moves legend to the side
+    legend.text = element_text(size = 8),   # Keeps text readable but small
+    legend.key.size = unit(0.4, "cm"),      # Adjusts box size
+    legend.margin = margin(0, 0, 0, 0),     # Removes extra whitespace
+    axis.text.x = element_text(angle = 45, hjust = 1) # Tilts x-axis labels if faculty names overlap
+  )
+p7
+
+ggsave("figures/rq1_post_grad_plan_by_faculty.svg", p7, width = 7, height = 4)
+
+
+# Year × plan
+p8 <- ggplot(clean_data, aes(x = `3- What is your current year of study?`,
+                             fill = `13- After completing your degree, what is your primary plan?`)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Post-Graduation Plans by Year",
+    y = "Proportion",
+    x = NULL,
+    fill = NULL     # <--- This removes the question text (title)
+  ) +
+  scale_fill_manual(
+    values = career_palette,
+    # Optional: wrapping text helps side legends fit better
+    labels = function(x) stringr::str_wrap(x, width = 20) 
+  ) +
+  theme(
+    legend.position = "right",           # Moves legend to the side
+    legend.text = element_text(size = 8), # Keeps text small
+    legend.key.size = unit(0.4, "cm"),    # Keeps boxes small
+    legend.margin = margin(0, 0, 0, 0)    # Removes extra whitespace
+  )
+
+ggsave("figures/rq1_post_grad_plan_by_year.svg", p8, width = 7, height = 4)
+
+
+
+
+```
+
+
+RQ2
+```{r}
+
+
+# Salary by plan (factor-safe)
+p9 <-ggplot(clean_data,
+       aes(x = `17- What is your expected net monthly salary for your first full-time job (in TL)? Please specify an approximate range.`,
+           fill = `13- After completing your degree, what is your primary plan?`)) +
+  geom_bar(position = "fill") +
+  coord_flip() +
+  labs(
+    title = "Expected Salary Distribution by Post-Graduation Plan",
+    x = "Salary Range",
+    y = "Proportion") +
+  scale_fill_manual(values = career_palette)
+  
+
+p9
+ggsave("figures/rq2_expected_salary_post_plan.svg", p9, width = 7, height = 4)
+
+
+# Faceted by faculty
+p10 <- ggplot(clean_data,
+       aes(x = `17- What is your expected net monthly salary for your first full-time job (in TL)? Please specify an approximate range.`,
+           fill = `13- After completing your degree, what is your primary plan?`)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~ faculty_merged) +
+  coord_flip() +
+  labs(
+    title = "Expected Salary Distribution by Plan and Faculty",
+    x = "Salary Range",
+    y = "Proportion")+
+  scale_fill_manual(
+  values = career_palette,
+  breaks = c(
+    "Seek full-time employment",
+    "Pursue a Master’s or PhD",
+    "Start your own business",
+    "Take a gap year",
+    "Other"
+  )
+)
+  
+
+p10
+ggsave("figures/rq2_expected_salary_post_plan_faculty.svg", p10, width = 7, height = 4)
+
+
+
+
+
+
+library(ggplot2)
+library(dplyr)
+
+
+
+# 1. Clean the Salary variable to ensure it's in the correct order
+# You might need to adjust the levels below to match your exact text
+salary_levels <- c("< 30,000", "30,000–49,999", "50,000–69,999", "70,000–99,999", "100,000+", "Prefer not to say")
+
+clean_data <- clean_data %>%
+  mutate(salary_clean = factor(`17- What is your expected net monthly salary for your first full-time job (in TL)? Please specify an approximate range.`, 
+                               levels = salary_levels))
+
+# 2. Better Visual: Percentage Bar Chart by Faculty
+p11<- ggplot(clean_data, aes(x = salary_clean, fill = faculty_merged)) +
+  geom_bar(position = "dodge") +
+  coord_flip() +
+  facet_wrap(~faculty_merged) +
+  labs(title = "Salary Expectations by Faculty",
+       x = "Expected Net Monthly Salary (TL)",
+       y = "Number of Students",
+       fill = "Faculty") +# Hide legend because facets show the faculty 
+  scale_fill_manual(values = career_palette)
+p11
+ggsave("figures/rq2_expected_salary_post_plan_faculty_2.svg", p11, width = 7, height = 4)
+
+
+
+```
+
+
+
+RQ3
+
+```{r}
+
+
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(forcats)
+
+# 0. Pick the Likert variables directly from the dataset
+likert_vars <- clean_data %>%
+  select(
+    `19- Financial security is the single most important aspect when choosing my first job (1 = Strongly disagree → 5 = Strongly agree)`:
+      `28- I believe my long-term career success depends more on luck than on hard work. (1 = Strongly disagree → 5 = Strongly agree)`
+  ) %>%
+  names()
+
+# 1. Reshape Likert data
+likert_long <- clean_data %>%
+  select(all_of(likert_vars)) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Question",
+    values_to = "Response"
+  ) %>%
+  filter(!is.na(Response))
+
+# 2. Cleaner, shorter labels
+likert_long$Question <- fct_recode(
+  likert_long$Question,
+  "Financial Security Priority" =
+    "19- Financial security is the single most important aspect when choosing my first job (1 = Strongly disagree → 5 = Strongly agree)",
+  "Leave Job < 3 Years" =
+    "20- I expect to stay at my first job for less than three years.",
+  "Diploma Importance" =
+    "21- I believe my diploma alone will be enough for me to find a good job. (1 = Strongly disagree → 5 = Strongly agree)",
+  "Need Second Job" =
+    "22- I think I might need a second job to maintain a decent standard of living. (1 = Strongly disagree → 5 = Strongly agree)",
+  "Flexibility Priority" =
+    "23- Having flexibility (remote work, flexible hours) is a priority for me in a job. (1 = Strongly disagree → 5 = Strongly agree)",
+  "Work Abroad" =
+    "24- I am open to considering work opportunities abroad. (1 = Strongly disagree → 5 = Strongly agree)",
+  "Work-Life Balance > Prestige" =
+    "25- I think work–life balance is more important than career prestige. (1 = Strongly disagree → 5 = Strongly agree)",
+  "Values > Salary" =
+    "26- I would accept a lower salary for a job that aligns with my values. (1 = Strongly disagree → 5 = Strongly agree)",
+  "Work > 40 Hours" =
+    "27- I believe I need to work more than 40 hours a week to earn a high salary. (1 = Strongly disagree → 5 = Strongly agree)",
+  "Success is Luck" =
+    "28- I believe my long-term career success depends more on luck than on hard work. (1 = Strongly disagree → 5 = Strongly agree)"
+)
+
+# 3. Your original color palette
+likert_palette <- c(
+  "Strongly disagree" = "#4C72B0",
+  "Disagree"          = "#55A868",
+  "Neutral"           = "#999999",
+  "Agree"             = "#C44E52",
+  "Strongly agree"    = "#8172B3"
+)
+
+# 4. Stacked likert (percent)
+p_likert <- ggplot(likert_long, aes(x = Question, fill = Response)) +
+  geom_bar(position = "fill", width = 0.75) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = likert_palette) +
+  labs(
+    title = "Distribution of Work Values and Career Attitudes",
+    x = NULL, y = "Percentage of Responses", fill = "Response"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "bottom", panel.grid.major.y = element_blank())
+
+p_likert
+#ggsave("figures/rq3_likert_distribution.svg", p_likert, width = 9, height = 6)
+
+# 5. Faceted bar counts
+p12 <- ggplot(likert_long, aes(x = Response, fill = Response)) +
+  geom_bar(width = 0.7) +
+  facet_wrap(~ Question, scales = "free_y", ncol = 3) +
+  scale_fill_manual(values = likert_palette) +
+  labs(
+    title = "Distribution of Responses to Career Attitude Statements",
+    x = NULL, y = "Number of Students"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 30, hjust = 1),
+    strip.text = element_text(face = "bold")
+  )
+
+p12
+ggsave("figures/rq3_work_values_likert.svg", p12, width = 7, height = 4)
+
+```
+
+
+
+RQ4
+```{r}
+
+
+
+library(stringr)
+
+ranking_vars <- clean_data %>%
+  select(starts_with("29-")) %>%
+  pivot_longer(
+    everything(),
+    names_to = "Factor",
+    values_to = "Rank"
+  ) %>%
+  mutate(
+    # Extract the text inside the brackets first
+    Factor = stringr::str_extract(Factor, "\\[(.*?)\\]"),
+    Factor = stringr::str_remove_all(Factor, "\\[|\\]"),
+    
+    # --- RENAME THE FACTORS HERE ---
+    Factor = case_when(
+      str_detect(Factor, "Meaningful") ~ "Meaningful Work",
+      str_detect(Factor, "Salary") ~ "Salary & Benefits",
+      str_detect(Factor, "Stability") ~ "Stability",
+      str_detect(Factor, "Autonomy") ~ "Autonomy",
+      str_detect(Factor, "Work-life") ~ "Work-Life Balance",
+      TRUE ~ Factor # Keeps any other names as they are
+    )
+  )
+
+# Rank distribution plot
+p13 <- ggplot(ranking_vars, aes(x = Rank, fill = Factor)) +
+  geom_bar() +
+  facet_wrap(~ Factor) +
+  labs(title = "Career Priorities", y = "Frequency", x = "Rank") +
+  theme(legend.position = "none") +
+  scale_fill_manual(values = career_palette)
+
+p13
+
+ggsave("figures/rq4_rank_dist.svg", p13, width = 7, height = 4)
+
+
+#######################################
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+# 1. Clean/Subset the ranking data
+# We select the ranking columns and the faculty_merged column
+rank_data <- clean_data %>%
+  select(
+    faculty_merged,
+    WLB = `29-  Please order the following from 1 (most important) to 5 (least important) according to your priorities. Each number can be used only once. [Work–life balance]`,
+    Salary = `29-  Please order the following from 1 (most important) to 5 (least important) according to your priorities. Each number can be used only once. [ High salary & benefits]`,
+    Meaning = `29-  Please order the following from 1 (most important) to 5 (least important) according to your priorities. Each number can be used only once. [ Meaningful work (positive social impact)]`,
+    Stability = `29-  Please order the following from 1 (most important) to 5 (least important) according to your priorities. Each number can be used only once. [ Career stability]`,
+    Autonomy = `29-  Please order the following from 1 (most important) to 5 (least important) according to your priorities. Each number can be used only once. [ Autonomy & independence]`
+  ) %>%
+  # Convert ranking columns to numeric
+  mutate(across(WLB:Autonomy, as.numeric))
+
+# 2. Calculate Mean Rank per Faculty
+mean_ranks <- rank_data %>%
+  group_by(faculty_merged) %>%
+  summarise(across(everything(), list(mean = ~mean(.x, na.rm = TRUE)))) %>%
+  pivot_longer(cols = -faculty_merged, names_to = "Priority", values_to = "Mean_Rank") %>%
+  mutate(Priority = gsub("_mean", "", Priority))
+
+# 3. Visualization: Comparison of Priorities
+p14<- ggplot(mean_ranks, aes(x = reorder(Priority, Mean_Rank), y = Mean_Rank, fill = faculty_merged)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_y_reverse(breaks = 1:5) + # Lower number (1) at the top because it's higher priority
+  labs(
+    title = "Average Priority Rankings by Faculty",
+    subtitle = "Lower bars indicate HIGHER priority (1 = Most Important)",
+    x = "Work Value",
+    y = "Average Rank (1-5)",
+    fill = "Faculty"
+  ) +
+  scale_fill_manual(values = career_palette)
+p14
+#ggsave("figures/rq4_rank_dist_faculty.svg", p14, width = 7, height = 4)
+
+
+```
+
+
+RQ5
+```{r}
+
+
+p15 <- ggplot(clean_data, 
+              aes(x = faculty_merged, 
+                  fill = factor(`24- I am open to considering work opportunities abroad. (1 = Strongly disagree → 5 = Strongly agree)`,
+                                levels = c("Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree")))) + 
+  geom_bar(position = "fill") +
+  labs(title = "Openness to Working Abroad by Faculty",
+       y = "Proportion", 
+       x = "Faculty",
+       fill = "Response") +
+  scale_fill_manual(values = rev(career_palette)) +
+  theme_minimal()
+p15
+ggsave("figures/rq5_openness_working_abroad.svg", p15, width = 7, height = 4)
+
+
+
+
+# Test differences between the 3 Faculty groups
+kruskal.test(as.factor(`24- I am open to considering work opportunities abroad. (1 = Strongly disagree → 5 = Strongly agree)`) ~ faculty_merged, 
+             data = clean_data)
+
+
+# svg("figures/kw_faculty_work_abroad.svg", kw_faculty_merged, width = 7, height = 2)
+
+
+p16<- ggplot(clean_data, aes(x = as.factor(`24- I am open to considering work opportunities abroad. (1 = Strongly disagree → 5 = Strongly agree)`), 
+                       fill = faculty_merged)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Why the p-value is high: Total Overlap", x = "Openness Score")
+
+p16
+ggsave("figures/rq5_pvalue_explanation.svg", p16, width = 7, height = 4)
+
+
+
+
+
+```
+
+
+
+RQ6
+```{r}
+
+library(ggplot2)
+
+# Visualization to show the "Universal" trend
+p17<- ggplot(clean_data, aes(x = `13- After completing your degree, what is your primary plan?`, 
+                       fill = `24- I am open to considering work opportunities abroad. (1 = Strongly disagree → 5 = Strongly agree)`)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = career_palette) + # Red to Green scale
+  coord_flip() +
+  labs(title = "Consensus on Working Abroad",
+       subtitle = "High p-values indicate that this desire is uniform across all student plans.",
+       x = "Primary Plan", y = "Proportion", fill = "Response (1-5)")
+p17
+
+ggsave("figures/rq6_primary_plan_vs_abroad_consideration.svg", p16, width = 7, height = 4)
+
+
+
+kw_primary_plan_vs_abroad_consideratio<- kruskal.test(as.factor(`24- I am open to considering work opportunities abroad. (1 = Strongly disagree → 5 = Strongly agree)`) ~ 
+               `13- After completing your degree, what is your primary plan?`, 
+             data = clean_data)
+
+
+
+```
+
+
+
+
+RQ7
+```{r}
+
+
+library(svglite)
+library(dplyr)
+library(tidyr)
+library(fmsb)
+library(scales)
+
+# --- OPEN GRAPHICS DEVICE ---
+svglite("figures/rq7_radar_faculty_vs_universal.svg", width = 12, height = 8)
+
+# 1. Setup the plotting area
+par(mfrow = c(1, 4), mar = c(4, 2, 4, 2)) 
+
+# 2. Plot the 3 Faculty Charts
+faculties <- unique(radar_df$faculty_merged)
+colors_line <- c("#E41A1C", "#377EB8", "#4DAF4A")
+colors_fill <- scales::alpha(colors_line, 0.2)
+
+for (i in seq_along(faculties)) {
+  faculty_data <- radar_df %>% 
+    filter(faculty_merged == faculties[i]) %>% 
+    ungroup() %>%
+    select(faculty_merged, 28,32,33,34,35) %>%
+    summarise(across(everything(), mean, na.rm = TRUE))
+  
+  plot_data <- rbind(rep(5, 5), rep(1, 5), faculty_data)
+  colnames(plot_data) <- c("Financial\nSecurity", "Flexibility", "Abroad", "Life\nBalance", "Values")
+  
+  radarchart(
+    plot_data,
+    pcol = colors_line[i],
+    pfcol = colors_fill[i],
+    plwd = 3,
+    cglcol = "grey",
+    cglty = 1,
+    axislabcol = "grey",
+    caxislabels = 1:5,
+    axistype = 1,
+    vlcex = 0.7
+  )
+  
+  mtext(paste0(faculties[i], "\n "), side = 1, line = 1.2, font = 2, cex = 0.7)
+}
+
+# 3. Add the 4th Chart: Universal Profile
+universal_data <- radar_df %>%
+  ungroup() %>%
+  select(2:6) %>%
+  summarise(across(everything(), mean, na.rm = TRUE))
+
+plot_data_uni <- rbind(rep(5, 5), rep(1, 5), universal_data)
+colnames(plot_data_uni) <- c("Financial\nSecurity", "Flexibility", "Abroad", "Life\nBalance", "Values")
+
+radarchart(
+  plot_data_uni,
+  pcol = "#6A3D9A",
+  pfcol = alpha("#6A3D9A", 0.3),
+  plwd = 4,
+  cglcol = "grey",
+  cglty = 1,
+  axislabcol = "grey",
+  caxislabels = 1:5,
+  axistype = 1,
+  vlcex = 0.7
+)
+
+mtext("ALL STUDENTS\n(Combined)", side = 1, line = 1.2, font = 2, cex = 0.7)
+
+# --- CLOSE DEVICE (VERY IMPORTANT) ---
+dev.off()
+
+# Reset layout for future plots
+par(mfrow = c(1, 1))
+```
+
+
+
